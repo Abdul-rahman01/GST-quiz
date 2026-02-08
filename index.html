@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GST 111: Communication in English Quiz</title>
+    <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+    <div id="timer-display" style="display: none;">Time: 60:00</div>
+
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <div class="container">
+        <div id="start-screen" style="text-align: center; padding: 50px; background: var(--glass); border-radius: 20px;">
+            <h1>Ready to start the GST 111 Exam?</h1>
+            <p>You have 60 minutes to complete 100 questions.</p>
+            <button type="button" id="submit-btn" onclick="beginTest()">Start Examination</button>
+        </div>
+
+        <div id="main-quiz-area" style="display: none;">
+            <header>
+                <div style="font-size: 3em; margin-bottom: 10px;">🎓</div>
+                <h1>GST 111 Examination</h1>
+                <h3>Communication in English I</h3>
+                <p><strong>Type A</strong> | 100 Questions</p>
+            </header>
+
+            <div id="quiz-container"></div>
+            <button type="button" id="submit-btn" onclick="submitQuiz()">Submit & Grade</button>
+            <div id="result-area"></div>
+        </div>
+    </div>
+    <style>
+        :root {
+    --primary: #6C5CE7;
+    --secondary: #a29bfe;
+    --success: #00b894;
+    --error: #d63031;
+    --dark: #2d3436;
+    --light: #dfe6e9;
+    --glass: rgba(255, 255, 255, 0.95);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: var(--dark);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Sticky Progress Bar */
+#progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+#progress-bar {
+    height: 100%;
+    background: var(--success);
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--success);
+}
+
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+header {
+    background: var(--glass);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    text-align: center;
+    margin-bottom: 30px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    animation: slideDown 0.8s ease-out;
+}
+
+h1 { margin: 0; color: var(--primary); letter-spacing: -1px; }
+h3 { margin-top: 5px; color: #555; font-weight: normal; }
+
+.question-card {
+    background: var(--glass);
+    padding: 25px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    opacity: 0; /* Hidden initially for animation */
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.question-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.question-text {
+    font-weight: 700;
+    font-size: 1.15em;
+    margin-bottom: 20px;
+    color: #2d3436;
+}
+
+.options-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.options-list li {
+    margin-bottom: 12px;
+}
+
+label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 12px 15px;
+    border-radius: 10px;
+    background-color: rgba(255,255,255,0.6);
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+label:hover {
+    background-color: white;
+    border-color: var(--secondary);
+    transform: scale(1.01);
+}
+
+input[type="radio"] {
+    margin-right: 15px;
+    transform: scale(1.3);
+    accent-color: var(--primary);
+}
+
+/* Feedback Animations */
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+.correct-answer {
+    background-color: #d4edda !important;
+    border-color: var(--success) !important;
+    color: #155724;
+    animation: pop 0.4s ease;
+}
+
+.wrong-answer {
+    background-color: #f8d7da !important;
+    border-color: var(--error) !important;
+    color: #721c24;
+    animation: shake 0.4s ease;
+}
+
+.feedback {
+    margin-top: 15px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 8px;
+    display: none;
+}
+
+#submit-btn {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(45deg, var(--primary), #a29bfe);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.3em;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 30px;
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+    transition: transform 0.2s;
+}
+
+#submit-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(108, 92, 231, 0.6);
+}
+
+#result-area {
+    text-align: center;
+    font-size: 1.5em;
+    margin-top: 30px;
+    padding: 40px;
+    border-radius: 20px;
+    background: white;
+    display: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: slideUp 0.5s ease-out;
+}
+
+/* Animation Keyframes */
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-50px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Floating Timer Style */
+#timer-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--dark);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 1001;
+    border: 2px solid var(--primary);
+}
+
+/* Red pulse when time is low (under 5 mins) */
+.timer-low {
+    background: var(--error) !important;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+#progress-container {
+    width: 100%;
+    height: 10px;
+    background: #e0e0e0;
+    position: fixed; /* Keeps it at the top */
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+#progress-bar {
+    height: 100%;
+    width: 0%; /* Starts at zero */
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    transition: width 0.4s ease; /* Makes the movement smooth */
+}
+    </style>
+
+    <script src="script.js"></script>
+
+<script>
+   // ---------------------------------------------------------
+    // 1. VARIABLES
+    // ---------------------------------------------------------
+    let timeLeft = 3600; // 60 minutes in seconds
+    const timerElement = document.getElementById('timer-display');
+    const startScreen = document.getElementById('start-screen');
+    const mainArea = document.getElementById('main-quiz-area');
+    const quizContainer = document.getElementById('quiz-container');
+    // ---------------------------------------------------------
+    // QUESTION DATA
+    // ---------------------------------------------------------
+    const quizData = [
+        // --- From Image 1 (Note Taking) ---
+        {
+            id: 1,
+            question: "1. The writing out of the main ideas of a topic during a lecture is called __________",
+            options: {
+                a: "Note-making",
+                b: "Note-taking",
+                c: "Note-keeping",
+                d: "Note-reading"
+            },
+            correct: "b"
+        },
+        // --- Questions 2 to 5 (Note Taking & Library) ---
+    {
+        id: 2,
+        question: "2. Note-making is a/an __________ activity.",
+        options: {
+            a: "pre-lecture",
+            b: "post-lecture",
+            c: "intra-lecture",
+            d: "all of the above"
+        },
+        correct: "b" 
+    },
+    {
+        id: 3,
+        question: "3. Apart from lectures, notes can also be taken from __________",
+        options: {
+            a: "social media",
+            b: "books",
+            c: "sports commentary",
+            d: "none of the above"
+        },
+        correct: "b"
+    },
+    {
+        id: 4,
+        question: "4. One of the following is a technique of note-taking __________",
+        options: {
+            a: "copying from others",
+            b: "speed thinking",
+            c: "use of abbreviations",
+            d: "use of electronic pen"
+        },
+        correct: "c"
+    },
+    {
+        id: 5,
+        question: "5. The type of dictionary that gives information on correct pronunciation is called __________",
+        options: {
+            a: "Accent dictionary",
+            b: "Intonation dictionary",
+            c: "Phonetic dictionary",
+            d: "Pronouncing dictionary"
+        },
+        correct: "d"
+    },
+     {
+            id: 6,
+            question: "6. A dictionary that gives information primarily on words that are similar in meaning is __________",
+            options: {
+                a: "Similitude dictionary",
+                b: "Antonymy dictionary",
+                c: "Thesaurus",
+                d: "Polysemous dictionary"
+            },
+            correct: "c"
+        },
+
+    // --- Questions 7 to 10 (Library & Sources) ---
+    {
+        id: 7,
+        question: "7. A dictionary gives information on all of the following except __________",
+        options: {
+            a: "parts of speech",
+            b: "idioms and proverbs",
+            c: "emotional intelligence",
+            d: "etymology"
+        },
+        correct: "c"
+    },
+    {
+        id: 8,
+        question: "8. The type of library that can be accessed on-line is referred to as __________",
+        options: {
+            a: "Digital library",
+            b: "Technical library",
+            c: "Academic library",
+            d: "Modern library"
+        },
+        correct: "a"
+    },
+    {
+        id: 9,
+        question: "9. Major sources of information in a library are __________",
+        options: {
+            a: "shelves and cabinets",
+            b: "books and journals",
+            c: "cards and files",
+            d: "all of the above"
+        },
+        correct: "b"
+    },
+    {
+        id: 10,
+        question: "10. Materials which are not lent out to readers but can only be read in the library are kept in the __________ section",
+        options: {
+            a: "Administration",
+            b: "Librarian",
+            c: "Reference",
+            d: "Manuscript"
+        },
+        correct: "c"
+    },
+
+    // --- Questions 11 to 15 (Parts of Speech) ---
+    // INSTRUCTION: Give the part of speech of the word underlined.
+    {
+        id: 11,
+        question: "11. The combined effort of the security apparatus rescued the victims from the den of their <u>abductors</u>.",
+        options: {
+            a: "noun",
+            b: "pronoun",
+            c: "adjective",
+            d: "verb"
+        },
+        correct: "a"
+    },
+    {
+        id: 12,
+        question: "12. Next <u>Monday</u> has been declared a national holiday.",
+        options: {
+            a: "noun",
+            b: "pronoun",
+            c: "adjective",
+            d: "verb"
+        },
+        correct: "a"
+    },
+    {
+        id: 13,
+        question: "13. He <u>appears</u> dangerous.", 
+        // Note: The underline was faint in the image, but 'appears' (verb) or 'He' (pronoun) are the likely targets. 
+        // Given 'dangerous' is an adjective and not an option, we assume the target is 'appears'.
+        options: {
+            a: "interjection",
+            b: "pronoun",
+            c: "noun",
+            d: "verb"
+        },
+        correct: "d"
+    },
+    {
+        id: 14,
+        question: "14. I left the pen <u>on</u> the table.",
+        options: {
+            a: "conjunction",
+            b: "preposition",
+            c: "adverb",
+            d: "adjective"
+        },
+        correct: "b"
+    },
+    {
+        id: 15,
+        question: "15. The coup plotters fought <u>one another</u>.",
+        options: {
+            a: "pronoun",
+            b: "noun",
+            c: "preposition",
+            d: "adverb"
+        },
+        correct: "a"
+    },
+
+    // --- Questions 16 to 20 (Idioms/Meaning) ---
+    // INSTRUCTION: Choose the right meaning of the expression in italics.
+    {
+        id: 16,
+        question: "16. Cynthia likes to <i>build castles in the air</i>.",
+        options: {
+            a: "She loves travelling by air",
+            b: "She imagines impossible things",
+            c: "She is a dangerous person",
+            d: "She has supernatural power"
+        },
+        correct: "b"
+    },
+    {
+        id: 17,
+        question: "17. Adu is the <i>black sheep of the family</i>.",
+        options: {
+            a: "He is the only dark-complexioned person",
+            b: "He loves black heritage",
+            c: "He brings shame and disrepute to the family",
+            d: "He was born on a black Friday"
+        },
+        correct: "c"
+    },
+    {
+        id: 18,
+        question: "18. He comes to school <i>once in a blue moon</i>.",
+        options: {
+            a: "once in a month",
+            b: "always",
+            c: "rarely",
+            d: "intermittently"
+        },
+        correct: "c"
+    },
+    {
+        id: 19,
+        question: "19. Ndidi was asked to <i>put her cards on the table</i>.",
+        options: {
+            a: "make her intentions known",
+            b: "do things properly",
+            c: "appreciate little things",
+            d: "explain herself better"
+        },
+        correct: "a"
+    },
+    {
+        id: 20,
+        question: "20. Abu is fond of telling <i>cock and bull stories</i>.",
+        options: {
+            a: "interesting stories",
+            b: "incredible stories",
+            c: "stories illustrated with animal characters",
+            d: "village folktales"
+        },
+        correct: "b"
+    },
+       
+        // --- From Image 2 (Sentence Types) ---
+        {
+            id: 21,
+            question: "21. Identify the function: 'Eze goes to school.'",
+            options: {
+                a: "Declarative",
+                b: "Interrogative",
+                c: "Imperative",
+                d: "Exclamatory"
+            },
+            correct: "a"
+        },
+        // --- Questions 22 to 25 (Sentence Functions) ---
+    {
+        id: 22,
+        question: "22. Identify the function: 'Get out of the class.'",
+        options: {
+            a: "Declarative",
+            b: "Interrogative",
+            c: "Imperative",
+            d: "Exclamatory"
+        },
+        correct: "c"
+    },
+    {
+        id: 23,
+        question: "23. Identify the function: 'Did you see the boy?'",
+        options: {
+            a: "Declarative",
+            b: "Interrogative",
+            c: "Imperative",
+            d: "Exclamatory"
+        },
+        correct: "b"
+    },
+    {
+        id: 24,
+        question: "24. Identify the function: 'It is good to see you!'",
+        options: {
+            a: "Declarative",
+            b: "Interrogative",
+            c: "Imperative",
+            d: "Exclamatory"
+        },
+        correct: "d"
+    },
+    {
+        id: 25,
+        question: "25. Identify the function: 'Things fall apart.'",
+        options: {
+            a: "Declarative",
+            b: "Interrogative",
+            c: "Imperative",
+            d: "Exclamatory"
+        },
+        correct: "a"
+    },
+     {
+            id: 26,
+            question: "26. Identify the structure: 'Michael loves beans.'",
+            options: {
+                a: "Simple",
+                b: "Compound",
+                c: "Complex",
+                d: "Compound complex"
+            },
+            correct: "a"
+        },
+    // --- Questions 27 to 30 (Sentence Structure) ---
+    {
+        id: 27,
+        question: "27. Identify the structure: 'I went to market and bought a pair of shoes.'",
+        options: {
+            a: "Simple",
+            b: "Compound",
+            c: "Complex",
+            d: "Compound complex"
+        },
+        correct: "b"
+    },
+    {
+        id: 28,
+        question: "28. Identify the structure: 'She came as soon as she heard.'",
+        options: {
+            a: "Simple",
+            b: "Compound",
+            c: "Complex",
+            d: "Compound complex"
+        },
+        correct: "c"
+    },
+    {
+        id: 29,
+        question: "29. Identify the structure: 'I came, I saw, I conquered.'",
+        options: {
+            a: "Simple",
+            b: "Compound",
+            c: "Multiple",
+            d: "Compound complex"
+        },
+        correct: "c"
+    },
+    {
+        id: 30,
+        question: "30. Identify the structure: 'Even if the heaven falls, justice must be done.'",
+        options: {
+            a: "Simple",
+            b: "Compound",
+            c: "Multiple",
+            d: "Compound complex"
+        },
+        correct: "d" // Note: This acts as a Complex sentence, but given these options, it fits the compound-complex mold.
+    },
+
+    // --- Questions 31 to 38 (Grammar & Concord) ---
+    {
+        id: 31,
+        question: "31. The ------- ought to have been earlier released.",
+        options: {
+            a: "informations",
+            b: "information",
+            c: "informative",
+            d: "info"
+        },
+        correct: "b" // 'Information' is uncountable.
+    },
+    {
+        id: 32,
+        question: "32. My brother-in-law and friend ------- found guiltless and discharged.",
+        options: {
+            a: "is",
+            b: "are",
+            c: "were",
+            d: "was"
+        },
+        correct: "d"
+    },
+    {
+        id: 33,
+        question: "33. The couple disagreed with -----------",
+        options: {
+            a: "each other",
+            b: "one another",
+            c: "themselves",
+            d: "theirselves"
+        },
+        correct: "a"
+    },
+    {
+        id: 34,
+        question: "34. They shared the eggs between Titi and -------",
+        options: {
+            a: "I",
+            b: "me",
+            c: "myself",
+            d: "mine"
+        },
+        correct: "b"
+    },
+    {
+        id: 35,
+        question: "35. My hubby is aware that I prefer Honda ------- Toyota.",
+        options: {
+            a: "than",
+            b: "from",
+            c: "to",
+            d: "with"
+        },
+        correct: "c"
+    },
+    {
+        id: 36,
+        question: "36. The doctors have agreed to ------- skeletal services next week.",
+        options: {
+            a: "resume",
+            b: "resume back",
+            c: "centre",
+            d: "mare back"
+        },
+        correct: "a"
+    },
+    {
+        id: 37,
+        question: "37. Yam and egg ------- my favourite meal.",
+        options: {
+            a: "is",
+            b: "were",
+            c: "are",
+            d: "aren't"
+        },
+        correct: "a"
+    },
+    {
+        id: 38,
+        question: "38. The President-elect along with his wife ------- around to commission the project.",
+        options: {
+            a: "is",
+            b: "are",
+            c: "have been",
+            d: "were"
+        },
+        correct: "a"
+    },
+        // --- From Image 3 (Grammar/Concord) ---
+        {
+            id: 39,
+            question: "39. Neither the boys nor their teacher ______ arrived at the venue of the competition.",
+            options: {
+                a: "has",
+                b: "have",
+                c: "will",
+                d: "would"
+            },
+            correct: "a" // Rule of proximity: agrees with 'teacher' (singular)
+        },
+        // --- Questions 40 to 45 (Concord/Agreement) ---
+    {
+        id: 40,
+        question: "40. The jury _______ divided in their opinions.",
+        options: { a: "was", b: "were", c: "is", d: "been" },
+        correct: "b" // Plural verb because they are 'divided' in opinion
+    },
+    {
+        id: 41,
+        question: "41. Ten kilometres _______ a long distance to walk.",
+        options: { a: "is", b: "are", c: "were", d: "be" },
+        correct: "a" // Measurements/distances are treated as a single unit
+    },
+    {
+        id: 42,
+        question: "42. The audience _______ requested to be seated.",
+        options: { a: "is", b: "are", c: "were", d: "have been" },
+        correct: "a"
+    },
+    {
+        id: 43,
+        question: "43. The committee _______ submitted their report.",
+        options: { a: "has", b: "have", c: "is", d: "was" },
+        correct: "b" // 'their' implies the members are acting individually
+    },
+    {
+        id: 44,
+        question: "44. The number of students _______ increased.",
+        options: { a: "has", b: "have", c: "is", d: "are" },
+        correct: "a" // 'The number' is singular
+    },
+    {
+        id: 45,
+        question: "45. A number of students _______ absent today.",
+        options: { a: "is", b: "are", c: "was", d: "has" },
+        correct: "b" // 'A number' is plural
+    },
+     {
+            id: 46,
+            question: "46. Either she or I ______ to sweep the floor this week.",
+            options: {
+                a: "has",
+                b: "am",
+                c: "were",
+                d: "was"
+            },
+            correct: "b" // Rule of proximity: agrees with 'I'
+        },
+
+    // --- Questions 47 to 55 (More Concord Rules) ---
+    {
+        id: 47,
+        question: "47. Each of the boys _______ a book.",
+        options: { a: "have", b: "has", c: "having", d: "were" },
+        correct: "b"
+    },
+    {
+        id: 48,
+        question: "48. Many a student _______ failed the test.",
+        options: { a: "have", b: "has", c: "is", d: "are" },
+        correct: "b" // 'Many a' takes a singular verb
+    },
+    {
+        id: 49,
+        question: "49. None of the players _______ ready.",
+        options: { a: "is", b: "are", c: "were", d: "have" },
+        correct: "a"
+    },
+    {
+        id: 50,
+        question: "50. Either the teacher or the students _______ wrong.",
+        options: { a: "is", b: "are", c: "was", d: "has" },
+        correct: "b" // Rule of proximity: 'students' is plural
+    },
+    {
+        id: 51,
+        question: "51. The girl as well as her friends _______ coming.",
+        options: { a: "is", b: "are", c: "were", d: "have" },
+        correct: "a" // Subject is 'The girl'
+    },
+    {
+        id: 52,
+        question: "52. Politics _______ a dirty game.",
+        options: { a: "is", b: "are", c: "were", d: "be" },
+        correct: "a"
+    },
+    {
+        id: 53,
+        question: "53. The news _______ bad.",
+        options: { a: "is", b: "are", c: "were", d: "be" },
+        correct: "a"
+    },
+    {
+        id: 54,
+        question: "54. Bread and butter _______ my favourite breakfast.",
+        options: { a: "is", b: "are", c: "were", d: "be" },
+        correct: "a" // Treated as a single meal
+    },
+    {
+        id: 55,
+        question: "55. The cattle _______ grazing in the field.",
+        options: { a: "is", b: "are", c: "was", d: "has" },
+        correct: "b" // 'Cattle' is always plural
+    },
+
+    // --- Questions 56 to 69 (Stress Patterns) ---
+    // Note: Caps indicate the stressed syllable.
+    {
+        id: 56, question: "56. Identify the primary stress: Examination",
+        options: { a: "ex-am-i-NA-tion", b: "ex-AM-i-na-tion", c: "EX-am-i-na-tion", d: "ex-am-I-na-tion" },
+        correct: "a"
+    },
+    {
+        id: 57, question: "57. Identify the primary stress: Education",
+        options: { a: "ED-u-ca-tion", b: "ed-u-CA-tion", c: "ed-U-ca-tion", d: "ed-u-ca-TION" },
+        correct: "b"
+    },
+    {
+        id: 58, question: "58. Identify the primary stress: Informative",
+        options: { a: "IN-for-ma-tive", b: "in-FOR-ma-tive", c: "in-for-MA-tive", d: "in-for-ma-TIVE" },
+        correct: "b"
+    },
+    {
+        id: 59, question: "59. Identify the primary stress: Photographer",
+        options: { a: "PHO-to-gra-pher", b: "pho-TO-gra-pher", c: "pho-to-GRA-pher", d: "pho-to-gra-PHER" },
+        correct: "b"
+    },
+    {
+        id: 60, question: "60. Identify the primary stress: Philosophy",
+        options: { a: "PHI-lo-so-phy", b: "phi-LO-so-phy", c: "phi-lo-SO-phy", d: "phi-lo-so-PHY" },
+        correct: "b"
+    },
+    {
+        id: 61, question: "61. Identify the primary stress: Biology",
+        options: { a: "BI-o-lo-gy", b: "bi-OL-o-gy", c: "bi-o-LO-gy", d: "bi-o-lo-GY" },
+        correct: "b"
+    },
+    {
+        id: 62, question: "62. Identify the primary stress: Understand",
+        options: { a: "UN-der-stand", b: "un-DER-stand", c: "un-der-STAND", d: "u-N-der-stand" },
+        correct: "c"
+    },
+    {
+        id: 63, question: "63. Identify the primary stress: Japanese",
+        options: { a: "JA-pan-ese", b: "ja-PAN-ese", c: "ja-pan-ESE", d: "ja-pa-Nese" },
+        correct: "c"
+    },
+    {
+        id: 64, question: "64. Identify the primary stress: Cigarette",
+        options: { a: "CI-ga-rette", b: "ci-GA-rette", c: "ci-ga-RETTE", d: "ci-ga-Re-tte" },
+        correct: "c"
+    },
+    {
+        id: 65, question: "65. Identify the primary stress: Record (Verb)",
+        options: { a: "RE-cord", b: "re-CORD", c: "r-E-cord", d: "re-c-O-rd" },
+        correct: "b"
+    },
+    {
+        id: 66, question: "66. Identify the primary stress: Present (Noun)",
+        options: { a: "PRE-sent", b: "pre-SENT", c: "p-R-esent", d: "pre-s-E-nt" },
+        correct: "a"
+    },
+    {
+        id: 67, question: "67. Identify the primary stress: Import (Noun)",
+        options: { a: "IM-port", b: "im-PORT", c: "i-M-port", d: "im-p-O-rt" },
+        correct: "a"
+    },
+    {
+        id: 68, question: "68. Identify the primary stress: Export (Verb)",
+        options: { a: "EX-port", b: "ex-PORT", c: "e-X-port", d: "ex-p-O-rt" },
+        correct: "b"
+    },
+    {
+        id: 69, question: "69. Identify the primary stress: Produce (Verb)",
+        options: { a: "PRO-duce", b: "pro-DUCE", c: "p-R-oduce", d: "pro-d-U-ce" },
+        correct: "b"
+    },
+
+    // --- Questions 70 to 74 (Vowel Sounds) ---
+    {
+        id: 70,
+        question: "70. Identify the sound: /i:/ (as in 'seat')",
+        options: { a: "fit", b: "meat", c: "met", d: "pat" },
+        correct: "b"
+    },
+    {
+        id: 71,
+        question: "71. Identify the sound: /ɪ/ (as in 'sit')",
+        options: { a: "be", b: "fit", c: "feel", d: "feet" },
+        correct: "b"
+    },
+    {
+        id: 72,
+        question: "72. Identify the sound: /e/ (as in 'bed')",
+        options: { a: "read (past)", b: "seed", c: "bead", d: "paid" },
+        correct: "a"
+    },
+    {
+        id: 73,
+        question: "73. Identify the sound: /æ/ (as in 'cat')",
+        options: { a: "father", b: "part", c: "mad", d: "ball" },
+        correct: "c"
+    },
+    {
+        id: 74,
+        question: "74. Identify the sound: /ʌ/ (as in 'cup')",
+        options: { a: "look", b: "book", c: "love", d: "pull" },
+        correct: "c"
+    },
+        // --- From Image 4 (Stress/Sounds) ---
+        {
+            id: 75,
+            question: "75. Indicate the stress: humility",
+            options: {
+                a: "HU-mi-li-ty",
+                b: "hu-mi-li-TY",
+                c: "hu-MI-li-ty",
+                d: "hu-mi-Ll-ty"
+            },
+            correct: "c"
+        },
+        // --- Questions 76 to 80 (Vowel Sounds) ---
+    {
+        id: 76,
+        question: "76. Identify the sound: /ɔ:/ (as in 'board')",
+        options: { a: "pot", b: "port", c: "bat", d: "pat" },
+        correct: "b"
+    },
+    {
+        id: 77,
+        question: "77. Identify the sound: /ɑ:/ (as in 'father')",
+        options: { a: "part", b: "pat", c: "pet", d: "pit" },
+        correct: "a"
+    },
+    {
+        id: 78,
+        question: "78. Identify the sound: /u:/ (as in 'moon')",
+        options: { a: "foot", b: "pool", c: "pull", d: "full" },
+        correct: "b"
+    },
+    {
+        id: 79,
+        question: "79. Identify the sound: /ʊ/ (as in 'foot')",
+        options: { a: "food", b: "mood", c: "look", d: "boot" },
+        correct: "c"
+    },
+    {
+        id: 80,
+        question: "80. Identify the sound: /з:/ (as in 'bird')",
+        options: { a: "bad", b: "bed", c: "girl", d: "gate" },
+        correct: "c"
+    },
+
+    // --- Questions 81 to 90 (Consonant Sounds) ---
+    {
+        id: 81,
+        question: "81. Identify the word with the sound /p/:",
+        options: { a: "photo", b: "pneumatic", c: "peace", d: "phantom" },
+        correct: "c" // 'p' is silent in pneumatic, and /f/ in photo/phantom
+    },
+    {
+        id: 82,
+        question: "82. Identify the word with the sound /b/:",
+        options: { a: "bomb", b: "climb", c: "book", d: "thumb" },
+        correct: "c" // 'b' is silent in the other options
+    },
+    {
+        id: 83,
+        question: "83. Identify the word with the sound /t/:",
+        options: { a: "though", b: "Thomas", c: "thought", d: "that" },
+        correct: "b" // 'Th' in Thomas is pronounced /t/
+    },
+    {
+        id: 84,
+        question: "84. Identify the word with the sound /k/:",
+        options: { a: "know", b: "knight", c: "kite", d: "knee" },
+        correct: "c"
+    },
+    {
+        id: 85,
+        question: "85. Identify the word with the sound /g/:",
+        options: { a: "gnaw", b: "game", c: "sign", d: "design" },
+        correct: "b"
+    },
+    {
+        id: 86,
+        question: "86. Identify the word with the sound /f/:",
+        options: { a: "tough", b: "though", c: "thought", d: "thorough" },
+        correct: "a" // 'gh' in tough is /f/
+    },
+    {
+        id: 87,
+        question: "87. Identify the word with the sound /v/:",
+        options: { a: "off", b: "of", c: "staff", d: "stiff" },
+        correct: "b" // 'of' is pronounced /əv/
+    },
+    {
+        id: 88,
+        question: "88. Identify the word with the sound /s/:",
+        options: { a: "sugar", b: "sure", c: "sun", d: "mansion" },
+        correct: "c"
+    },
+    {
+        id: 89,
+        question: "89. Identify the word with the sound /z/:",
+        options: { a: "case", b: "books", c: "zebra", d: "mass" },
+        correct: "c"
+    },
+    {
+        id: 90,
+        question: "90. Identify the word with the sound /h/:",
+        options: { a: "hour", b: "honest", c: "heir", d: "house" },
+        correct: "d" // 'h' is silent in the first three
+    },
+        // --- From Image 5 (Spelling) ---
+        {
+            id: 91,
+            question: "91. Choose the word with the right spelling:",
+            options: {
+                a: "Etiquete",
+                b: "Etiquette",
+                c: "Ettiquette",
+                d: "Etiquet"
+            },
+            correct: "b"
+        },
+        
+        {
+            id: 100,
+            question: "100. Choose the word with the right spelling:",
+            options: {
+                a: "Proffessor",
+                b: "Professor",
+                c: "Profesor",
+                d: "Proffesor"
+            },
+            correct: "b"
+        }
+    ];
+
+    // ---------------------------------------------------------
+    // LOGIC
+    // ---------------------------------------------------------
+   // 3. START TEST LOGIC
+function beginTest() {
+    startScreen.style.display = 'none';
+    mainArea.style.display = 'block';
+    timerElement.style.display = 'block';
+    loadQuiz();
+    startTimer();
+}
+
+function startTimer() {
+    const timerInterval = setInterval(() => {
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+        timerElement.innerHTML = `Time: ${minutes}:${seconds}`;
+
+        if (timeLeft <= 300) timerElement.classList.add('timer-low');
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            alert("Time is up!");
+            submitQuiz(true);
+        } else {
+            timeLeft--;
+        }
+    }, 1000);
+}
+
+// 4. LOAD QUIZ (With Progress Bar Trigger)
+function loadQuiz() {
+    quizContainer.innerHTML = ""; // Clear container first
+    quizData.forEach((item) => {
+        const card = document.createElement('div');
+        card.classList.add('question-card');
+        
+        const optionsHtml = [];
+        for(let letter in item.options) {
+            optionsHtml.push(
+                `<li>
+                    <label id="q${item.id}_${letter}_label">
+                        <input type="radio" name="q${item.id}" value="${letter}" onchange="updateProgress()">
+                        ${letter.toUpperCase()}. ${item.options[letter]}
+                    </label>
+                </li>`
+            );
+        }
+
+        card.innerHTML = `
+            <div class="question-text">${item.question}</div>
+            <ul class="options-list">${optionsHtml.join('')}</ul>
+            <div class="feedback" id="feedback_${item.id}" style="display:none; margin-top:10px; font-weight:bold;"></div>
+        `;
+        quizContainer.appendChild(card);
+    });
+}
+
+// 5. PROGRESS BAR LOGIC
+function updateProgress() {
+    const totalQuestions = quizData.length;
+    const answeredQuestions = new Set();
+    
+    // Check how many unique question names have a checked radio button
+    document.querySelectorAll('input[type="radio"]:checked').forEach(input => {
+        answeredQuestions.add(input.name);
+    });
+
+    const progressPercent = (answeredQuestions.size / totalQuestions) * 100;
+    document.getElementById('progress-bar').style.width = progressPercent + "%";
+}
+
+// 6. SUBMIT & GRADE LOGIC
+function submitQuiz(isForced = false) {
+    if (!isForced) {
+    }
+
+    let score = 0;
+    quizData.forEach(item => {
+        const selected = document.querySelector(`input[name="q${item.id}"]:checked`);
+        const feedbackEl = document.getElementById(`feedback_${item.id}`);
+        
+        // Remove any old styling
+        ['a','b','c','d'].forEach(opt => {
+            const lbl = document.getElementById(`q${item.id}_${opt}_label`);
+            if(lbl) lbl.classList.remove('correct-answer', 'wrong-answer');
+        });
+
+        if (selected) {
+            if (selected.value === item.correct) {
+                score++;
+                document.getElementById(`q${item.id}_${selected.value}_label`).classList.add('correct-answer');
+                feedbackEl.innerText = "Correct!";
+                feedbackEl.style.color = "#28a745";
+            } else {
+                document.getElementById(`q${item.id}_${selected.value}_label`).classList.add('wrong-answer');
+                document.getElementById(`q${item.id}_${item.correct}_label`).classList.add('correct-answer');
+                feedbackEl.innerText = `Wrong! Correct: ${item.correct.toUpperCase()}`;
+                feedbackEl.style.color = "#dc3545";
+            }
+        } else {
+            // If they skipped it, show them the right answer
+            document.getElementById(`q${item.id}_${item.correct}_label`).classList.add('correct-answer');
+            feedbackEl.innerText = "Skipped.";
+            feedbackEl.style.color = "#666";
+        }
+        feedbackEl.style.display = "block";
+    });
+
+    // Show final score
+    timerElement.style.display = 'none';
+    const resultArea = document.getElementById('result-area');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = `<h2>Final Score: ${score} / ${quizData.length} (${((score/quizData.length)*100).toFixed(0)}%)</h2>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to see progress/score
+}
+
+</script>
+
+<footer style="text-align:center; padding:10px; font-size:0.8em; color:#928f8f;">
+    &copy; 2026 Abraham | <a href="https://ayodigitals.framer.website" target="_blank" 
+    style="color:#928f8f; text-decoration:underline;">ayodigitals</a>
+</footer>
+</body>
+</html>
